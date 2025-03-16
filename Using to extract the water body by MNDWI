@@ -5,30 +5,30 @@ var geometry =
           [113, 21],
           [118, 21],
           [118, 25]]], null, false);
-// 获取 Landsat 8 影像数据集
+// Obtain Landsat 8 image dataset
 var imageCollection = ee.ImageCollection("LANDSAT/LC08/C02/T1_TOA")
   .filterDate('2014-01-02','2014-05-10')
   .filterBounds(geometry);
 
-// 选择影像波段并计算MNDWI指数
-var calculateINDWI = function(image) {
+// Select image bands and calculate MNDWI index
+var calculateMNDWI = function(image) {
   var mndwi = image.normalizedDifference(['B3', 'B6']); // green(B3) NIR (B5) and SWIR (B6) bands
   return mndwi.rename('MNDWI').copyProperties(image, ['system:time_start']);
 };
 
-// 对影像集中的每个影像应用MNDWI计算
+// Apply MNDWI calculation to each image in the image set
 var mndwiCollection = imageCollection.map(calculateMNDWI);
 
-// 可视化INDWI指数
+// Visualize the MNDWI Index
 var mndwiVis = {min: -1, max: 1, palette: ['blue', 'white', 'green']};
 Map.addLayer(mndwiCollection.mean(), mndwiVis, 'MNDWI');
 Map.setCenter(113,22,7);
-/*
-//导出MNDWI图像到Google Drive
+
+// Export MNDWI images to Google Drive
 Export.image.toDrive({
   image: mndwiCollection.mean(),
   description: 'MNDWI_export',
-  scale: 30, // 设置分辨率
+  scale: 30, // Set spatial resolution
   region: geometry
 });
-*/
+
