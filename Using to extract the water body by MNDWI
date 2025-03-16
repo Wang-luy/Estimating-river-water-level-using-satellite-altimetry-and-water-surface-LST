@@ -1,10 +1,9 @@
 
-var geometry = 
-    ee.Geometry.Polygon(
-        [[[113, 25],
-          [113, 21],
-          [118, 21],
-          [118, 25]]], null, false);
+var djBasin = ee.FeatureCollection("projects/ee-wangq593/assets/DJbasin");
+
+// Convert Feature Collection to Geometry Object
+var geometry = djBasin.geometry();
+
 // Obtain Landsat 8 image dataset
 var imageCollection = ee.ImageCollection("LANDSAT/LC08/C02/T1_TOA")
   .filterDate('2014-01-02','2014-05-10')
@@ -26,7 +25,7 @@ Map.setCenter(113,22,7);
 
 // Export MNDWI images to Google Drive
 Export.image.toDrive({
-  image: mndwiCollection.mean(),
+  image: mndwiCollection.mean().clip(geometry),
   description: 'MNDWI_export',
   scale: 30, // Set spatial resolution
   region: geometry
