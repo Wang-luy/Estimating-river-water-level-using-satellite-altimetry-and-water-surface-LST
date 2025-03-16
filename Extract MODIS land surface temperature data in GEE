@@ -1,0 +1,40 @@
+var LXStation = ee.Geometry([*, *]);
+var HYStation = ee.Geometry([*, *]);
+var LCStation = ee.Geometry([*, *]);
+var pts = ee.FeatureCollection(ee.List([ee.Feature(LXStation).set('name','LXStation'),
+                                        ee.Feature(HYStation).set('name','HYStation'),
+                                        ee.Feature(LCStation).set('name','LCStation')]));
+                                     
+//IMPORT LANDSAT IMAGE
+
+var L82014pre = ee.ImageCollection("MODIS/006/MOD11A1")
+.filterDate('2013-01-01','2020-01-01')
+//.select('LST_Night_1km','QC_Night','Night_view_time','Night_view_angle','Clear_night_cov','Emis_31','Emis_32');
+.select('LST_Day_1km','QC_Day','Day_view_time','Day_view_angle','Clear_day_cov','Emis_31','Emis_32');
+var ft = ee.FeatureCollection(ee.List([]));
+
+var fill = function(img, ini) {
+
+  var inift = ee.FeatureCollection(ini)
+
+  var ft2 = img.sampleRegions({
+  collection:pts,
+  properties:ee.List(['name']),
+  scale:30
+  });
+  var date = img.date().format() //time convert to UTC format
+  var ft3 = ft2.map(function(f){return f.set("date", date)})//Maps an algorithm over a collection
+  return inift.merge(ft3)
+}
+
+// Iterates over the ImageCollection
+var newft = ee.FeatureCollection(L82014pre.iterate(fill, ft))
+
+Export.table.toDrive({
+  collection: newft,
+  description: 'TerraDay2013-2020',
+  //description: 'TerraNight2013-2020',
+  //description: 'AquaDay2013-2020',
+  //description: 'AquaNight2013-2020',
+  fileFormat: 'CSV'
+});
