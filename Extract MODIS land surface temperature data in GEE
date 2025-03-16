@@ -1,6 +1,6 @@
-var LXStation = ee.Geometry([*, *]);
-var HYStation = ee.Geometry([*, *]);
-var LCStation = ee.Geometry([*, *]);
+var LXStation = ee.Geometry([*]);
+var HYStation = ee.Geometry([*]);
+var LCStation = ee.Geometry([*]);
 var pts = ee.FeatureCollection(ee.List([ee.Feature(LXStation).set('name','LXStation'),
                                         ee.Feature(HYStation).set('name','HYStation'),
                                         ee.Feature(LCStation).set('name','LCStation')]));
