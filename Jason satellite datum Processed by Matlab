@@ -1,0 +1,78 @@
+Path1 = 'E:\JasonAltimetrySatellite\Jason3\';
+
+File = dir(fullfile(Path1,'*.nc'));  % Display complete information of all files with the suffix. nc in the folder
+FileNames = {File.name}';            % Extract the file names of all files with the suffix. nc and convert them into n rows and 1 column
+ 
+ 
+Length_Names = size(FileNames,1);    % Obtain the number of extracted data files
+for k = 1 : Length_Names
+    %Connect the path and file name to obtain the complete file path
+    K_Trace = strcat(Path1, FileNames(k));
+    
+    % 注意2：Due to the fact that KTrace is in cellular array format, {1,1} needs to be added to obtain the string
+    fname_in     = K_Trace{1,1};
+    %fname_in Test for displaying names
+
+      cycle_number = ncreadatt(fname_in,'/','cycle_number');
+    pass_number  = ncreadatt(fname_in, '/', 'pass_number');
+    time         = ncread(fname_in,'time_20hz'); % time
+    lat          = ncread(fname_in,'lat_20hz');  % latitude
+    lon          = ncread(fname_in,'lon_20hz');  % Lontitude
+
+    alt          = ncread(fname_in,'alt_20hz');  % altimetry
+    %range        = ncread(fname_in, 'range_20hz_ku');
+    %range        = ncread(fname_in, 'ice_range_20hz_c');
+    range        = ncread(fname_in, 'ice_range_20hz_ku');
+    dry          = ncread(fname_in, 'model_wet_tropo_corr');% Dry tropospheric
+    wet          = ncread(fname_in, 'model_dry_tropo_corr');% Wet tropospheric
+    iono         = ncread(fname_in, 'iono_corr_gim_ku'); % ionospheric correction
+    pt           = ncread(fname_in, 'pole_tide');% polar tide
+    set          = ncread(fname_in, 'solid_earth_tide');
+    geoid        = ncread(fname_in, 'geoid');% the EGM96 geoid
+
+%     Wavefrom     = ncread(fname_in,'waveforms_20hz_c');
+    Wavefrom     = ncread(fname_in,'waveforms_20hz_ku');
+
+    wvf_index    = ncread(fname_in,'wvf_ind');
+    Nwvf_index   = wvf_index + 1;
+
+    [row,col]    = find(lat >= 23.265056 & lat <= 23.299472); % 选出纬度在缓冲区域的数据,返回X,Y索引值
+    %[row,col]    = find(lat >= 23.280056 & lat <= 23.284472); % 选出纬度在该区域的数据,返回X,Y索引值
+    %lon_index    =find(lon >= 114.777 & lon <=114.789);
+    is_range_nan  = isnan(range);          % Return a vector of the same size as range and determine if the value of range is NaN. If it is, it is 1, and if it is not, it is 0
+
+    out_file_id   = fopen('E:\Matlab\matlab\Jason\VirtualStation4\Jason3\P4RangeKu2024.txt','a+'); % Store data files
+
+        row_index = find(row);
+          for j = min(row_index) : max(row_index)
+              %if(is_range_nan(row(j),col(j)) == 0)        % Do not calculate for the default value of range
+
+                NewWavefrom = Wavefrom(:,row(j),col(j));
+                %Filter out waveforms with obvious main peaks, and if they are less than 1.5, they are considered to have no main peak and there is a lot of noise. Exclude them
+                PP_NewWavefrom = (31.5*max(NewWavefrom))/(sum(NewWavefrom(6:99)));
+
+%                 %Water level correction value
+%                 Height_offset = dry(col(j)) + wet(col(j)) + iono(col(j)) + pt(col(j)) + set(col(j)) + geoid(col(j));
+% 
+%                 Height_ice = alt(row(j),col(j)) - range(row(j),col(j)); 
+%                 Height_ice_New = alt(row(j),col(j)) - range(row(j),col(j)) - Height_offset;
+% 
+%                 %Record PP value, resample gate position
+%                 fprintf(out_file_id, '%d\t%d\t%.5f\t%.5f\t%.3f\t%.3f\t', cycle_number, pass_number, lon(row(j),col(j)), lat(row(j),col(j)), alt(row(j),col(j)), range(row(j),col(j)));
+%                 %Record the correction value, keeping the time to 6 decimal places
+%                 fprintf(out_file_id, '%.3f\t%.3f\t%.3f\t%.3f\t%.6f\n',PP_NewWavefrom,Height_offset,Height_ice,Height_ice_New,time(row(j),col(j)));
+%                  
+
+                %Draw waveform diagram
+                plot(Nwvf_index,NewWavefrom)
+                %'my_figure.jpg'; %Set image name+output image address
+%                 folder = 'E:\Matlab\matlab\Jason\VirtualStation4\Jason3\VirtualStation4-Wavefrom-RangeC';
+                folder = 'E:\Matlab\matlab\Jason\VirtualStation4\Jason3\VirtualStation4-Wavefrom-RangeKu';
+                %Naming according to the track number
+                filename = sprintf('image_%03d%04d%02d.jpg', cycle_number,col(j),row(j));
+                filepath = fullfile(folder, filename);
+                resolution = '-r500'; % Set the image resolution to 500 dpi
+                print(gcf,filepath, '-djpeg',resolution);% output image
+          end
+          fclose(out_file_id);
+end
